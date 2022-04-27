@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">ServerSMSRetrieverBi</string>
-    <string name="pantalla_inicial_del_servidor_smsretriever">Pantalla de Debug del Servidor SMSRetriever</string>
+    <string name="app_name">ServerSMSF</string>
+    <string name="pantalla_inicial_del_servidor_smsretriever">Pantalla de Debug del Servidor SMSRetrieverF</string>
 </resources>

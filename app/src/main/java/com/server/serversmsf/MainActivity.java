@@ -2,12 +2,14 @@ package com.server.serversmsf;
 
 import static android.app.PendingIntent.FLAG_IMMUTABLE;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.telephony.SmsManager;
@@ -19,6 +21,8 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -47,18 +51,12 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.SetOptions;
-
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
-    private static final String TAG = "ServerA";
+    private static final String TAG = "ServerF";
     private FirebaseFirestore mDatabase;
     private String nTel, msg, telVerif, telAux;
     private int rCode, codeTel;
@@ -88,6 +86,16 @@ public class MainActivity extends AppCompatActivity {
         app = FirebaseApp.initializeApp(this);
         auten = FirebaseAuth.getInstance();
 
+        //Pedir permisos de la aplicación
+        int permissionCheck = ContextCompat.checkSelfPermission(
+                this, Manifest.permission.SEND_SMS);
+
+        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
+            Log.i("Permisos", "Pedir permisos");
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.SEND_SMS}, 225);
+        } else {
+            Log.i("Permisos", "Se otorgaron los permisos");
+        }
 
         //Obtener token de Auth
         String url = "https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPassword?key=AIzaSyCO0wQa_fia6ojLkFCzLG-sft5XUWF2Skw";
