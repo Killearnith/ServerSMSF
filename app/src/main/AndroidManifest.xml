@@ -6,9 +6,9 @@
 
     <application
         android:allowBackup="true"
-        android:icon="@drawable/sbnofont"
+        android:icon="@drawable/sfnofont"
         android:label="@string/app_name"
-        android:roundIcon="@drawable/sbnofont"
+        android:roundIcon="@drawable/sfnofont"
         android:supportsRtl="true"
         android:theme="@style/Theme.ServerSMSRetrieverBi">
         <activity
