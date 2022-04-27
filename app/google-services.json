@@ -1,0 +1,69 @@
+{
+  "project_info": {
+    "project_number": "49070307835",
+    "firebase_url": "https://smsretrieverservera-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "smsretrieverservera",
+    "storage_bucket": "smsretrieverservera.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:49070307835:android:44a529ef609c8d2e01f35e",
+        "android_client_info": {
+          "package_name": "com.example.appbp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "49070307835-gqmd74cc3cpsvtan1oioja73urlp6itk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCO0wQa_fia6ojLkFCzLG-sft5XUWF2Skw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "49070307835-gqmd74cc3cpsvtan1oioja73urlp6itk.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:49070307835:android:1b7f90860f2fbf9601f35e",
+        "android_client_info": {
+          "package_name": "com.example.serversmsretrieverbi"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "49070307835-gqmd74cc3cpsvtan1oioja73urlp6itk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCO0wQa_fia6ojLkFCzLG-sft5XUWF2Skw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "49070307835-gqmd74cc3cpsvtan1oioja73urlp6itk.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
