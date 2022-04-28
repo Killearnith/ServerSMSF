@@ -29,6 +29,7 @@ import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
 import com.server.serversmsf.modelo.Clave;
@@ -58,7 +59,7 @@ import java.util.Random;
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "ServerF";
     private FirebaseFirestore mDatabase;
-    private String nTel, msg, telVerif, telAux;
+    private String nTel, msg, telVerif, telAux, hashkey;
     private int rCode, codeTel;
     private TextView textView, textAbajo;
     private FirebaseApp app;
@@ -91,15 +92,14 @@ public class MainActivity extends AppCompatActivity {
                 this, Manifest.permission.SEND_SMS);
 
         if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
-            Log.i("Permisos", "Pedir permisos");
+            Log.d("Permisos", "Pedir permisos");
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.SEND_SMS}, 225);
         } else {
-            Log.i("Permisos", "Se otorgaron los permisos");
+            Log.d("Permisos", "Se otorgaron los permisos");
         }
 
         //Obtener token de Auth
         String url = "https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPassword?key=AIzaSyCO0wQa_fia6ojLkFCzLG-sft5XUWF2Skw";
-        Log.d("Test", "Aqui llego");
         // Request a string response from the provided URL.
         RequestQueue requestQueue = Volley.newRequestQueue(this);
         JSONObject postData = new JSONObject();
@@ -130,7 +130,6 @@ public class MainActivity extends AppCompatActivity {
         });
         requestQueue.add(jsonObjectPost);
         //Obtener tel ---->
-        Log.d("Test", "Aqui tmb");
         auten.signInWithEmailAndPassword("a@a.com", "123456").addOnCompleteListener(new OnCompleteListener<AuthResult>() {
             @Override
             public void onComplete(@NonNull Task<AuthResult> task) {
@@ -145,13 +144,19 @@ public class MainActivity extends AppCompatActivity {
                                     @Override
                                     public void onResponse(JSONObject response) {
                                         try {
-                                            if (response.length() == 1 && nTel==null) {
-                                                Toast.makeText(getApplicationContext(), "Solo se manda el tel", Toast.LENGTH_SHORT).show();
+                                            Log.d(TAG, "Response length: "+response.length());
+                                            if(response.has("otp")){
+                                                Log.d(TAG, "OTP: "+response.getInt("otp"));
+                                            }
+                                            if (response.length() == 2 && nTel==null && rCode==0) {
+                                                Toast.makeText(getApplicationContext(), "Se manda tel y hash", Toast.LENGTH_SHORT).show();
                                                 nTel = response.getString("tel");
+                                                hashkey = response.getString("hash");
                                                 textView.setText("Recibida petición de: " + nTel);
                                             } else if ((response.length() == 2) && (response.has("otp"))) {
                                                 telVerif = response.getString("tel");
                                                 codeTel = response.getInt("otp");
+                                                Toast.makeText(getApplicationContext(), "Se verifica el OTP", Toast.LENGTH_SHORT).show();
                                                 textView.setText("Recibida petición de verificación de: " + telVerif);
                                                 textAbajo.setText("El código OTP recibido es: " + codeTel);
                                                 if (telVerif != null && codeTel != 0 && (telVerif.equals(telAux)) && (codeTel==rCode)) {
@@ -167,6 +172,7 @@ public class MainActivity extends AppCompatActivity {
                                                                 clave.setNumtel(telVerif);
                                                                 //Vaciamos el contenido
                                                                 telVerif = null;
+                                                                rCode=0;
                                                                 clave.setExpiracion(Timestamp.now());
                                                                 mDatabase.collection("code").document("verifCodes")
                                                                         .update("lCode", FieldValue.arrayUnion(clave))
@@ -182,7 +188,6 @@ public class MainActivity extends AppCompatActivity {
                                                                                     tokenData.put("token", token);
                                                                                     textAbajo.setTextColor(Color.parseColor("#03A9F4"));
                                                                                     textAbajo.setText("El token de la conexión con el cliente es " +token);
-
                                                                                     //tokenData.put("otp", null);
                                                                                     //tokenData.put("tel", null);
                                                                                 } catch (JSONException e) {
@@ -216,18 +221,43 @@ public class MainActivity extends AppCompatActivity {
 
                                             } else if (response.length() == 0){
                                                 textView.setText("Canal de comunicación borrado");
-                                            }else textView.setText("ERROR DATOS ERRONEOS POR API REST");
-
+                                            }else if (response.length() == 1 && !(response.has("token"))) {
+                                                //Borramos los datos que se han enviado
+                                                RequestQueue requestTokenQueue = Volley.newRequestQueue(MainActivity.this);
+                                                JSONObject tokenData = new JSONObject();
+                                                String url ="https://smsretrieverservera-default-rtdb.europe-west1.firebasedatabase.app/numeros.json?auth="+auth;
+                                                //tokenData.put("otp", null);
+                                                //tokenData.put("tel", null);
+                                                // Borramos la info en la URL.
+                                                StringRequest deleteRequest = new StringRequest(Request.Method.DELETE, url, new Response.Listener<String>() {
+                                                    @Override
+                                                    public void onResponse(String response) {
+                                                        textAbajo.setTextColor(Color.parseColor("#03A9F4"));
+                                                        textView.setText("ERROR DATOS ERRONEOS POR API REST, SOLO TLF");
+                                                        textAbajo.setText("Borrando los datos del canal de comunicación");
+                                                    }
+                                                }, new Response.ErrorListener() {
+                                                    @Override
+                                                    public void onErrorResponse(VolleyError error) {
+                                                        error.printStackTrace();
+                                                    }
+                                                });
+                                                requestTokenQueue.add(deleteRequest);
+                                            }
                                         } catch (JSONException e) {
                                             e.printStackTrace();
-                                        }
-                                        if (nTel != null) {
+                                        }//FIN IF de posibles casos ondatachange
+                                        if (nTel != null && hashkey!=null) {
                                             //Creamos el nuevo codigo OTP.
                                             rCode = crearCodigo();
                                             textAbajo.setText("El código OTP enviado es: " + rCode);
-                                            msg = crearMensaje();
+
+                                            msg = crearMensaje(hashkey);
                                             sendSMS(nTel, msg);
+                                            Log.d(TAG, "Se crea el SMS y se envía" );
                                             telAux = nTel;
+                                            Log.d(TAG, "Se borra hashkey" );
+                                            hashkey=null;
                                             //Si no hay num tel no escribe en la BD
                                                 Toast.makeText(getApplicationContext(), "El num de tel es: " + nTel, Toast.LENGTH_LONG).show();
                                                 //Guardamos el codigo en la BD
@@ -242,8 +272,8 @@ public class MainActivity extends AppCompatActivity {
                                                             clave.setCode(rCode);
                                                             clave.setNumtel(nTel);
                                                             //Vaciamos el contenido
+                                                            Log.d(TAG, "Se borra nTel despues de escribirse en la BD" );
                                                             nTel = null;
-
                                                             clave.setExpiracion(Timestamp.now());
                                                             mDatabase.collection("code").document("listcode")
                                                                     .update("lCode", FieldValue.arrayUnion(clave))
@@ -264,7 +294,6 @@ public class MainActivity extends AppCompatActivity {
                                                 });
                                                   //Fin IF
                                         }
-
                                     }
                                 }, new Response.ErrorListener() {
                                     @Override
@@ -273,17 +302,15 @@ public class MainActivity extends AppCompatActivity {
                                     }
                                 });
                         queue.add(jsonObjectRequest);
-
                     }
 
                     @Override
                     public void onCancelled(@NonNull DatabaseError error) {
-                        Log.w("SE BORRAN COSAS", "SE ESTAN BORRANDO COSAS");
+                        Log.w("SE BORRAN DATOS", "Se están borrando datos");
                     }
                 });
             }
         });
-
     }
     //Obtenemos los datos que queremos guardar en la BD para tener un control
 
@@ -306,9 +333,9 @@ public class MainActivity extends AppCompatActivity {
         return token;
     }
 
-    private String crearMensaje() {
+    private String crearMensaje(String h) {
         String msg;
-        msg = "Tú código OTP es: " + rCode + "\n" + "g3Mji1k3j7Q";
+        msg = "Tú código OTP es: " + rCode + "\n" + h;
         return msg;
     }
 
