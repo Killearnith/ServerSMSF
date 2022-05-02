@@ -24,24 +24,36 @@
         android:id="@+id/text"
         android:layout_width="200dp"
         android:layout_height="100dp"
-        android:textSize="10pt"
-        android:layout_marginStart="92dp"
-        android:layout_marginTop="225dp"
+        android:layout_marginLeft="104dp"
+        android:layout_marginTop="224dp"
         android:textColor="#D51818"
+        android:textSize="10pt"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/textabajo"
         android:layout_width="250dp"
         android:layout_height="100dp"
-        android:textSize="10pt"
-        android:layout_marginStart="75dp"
-        android:layout_marginTop="425dp"
+        android:layout_marginLeft="80dp"
+        android:layout_marginTop="420dp"
         android:textColor="#D51818"
+        android:textSize="10pt"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/buttonBorrar"
+        android:layout_width="204dp"
+        android:layout_height="62dp"
+        android:layout_marginLeft="100dp"
+        android:layout_marginTop="124dp"
+        android:backgroundTint="#2196F3"
+        android:fontFamily="@font/sigmar_one"
+        android:onClick="onBorrar"
+        android:text="@string/borrar"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        />
+        tools:ignore="OnClick" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

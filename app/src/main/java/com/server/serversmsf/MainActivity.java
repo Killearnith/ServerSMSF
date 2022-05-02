@@ -14,6 +14,8 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.telephony.SmsManager;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -66,6 +68,7 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseAuth auten;
     private String auth;
     private Clave clave;
+    private Button borrar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,6 +83,7 @@ public class MainActivity extends AppCompatActivity {
         //Enlazar views
         textView = (TextView) findViewById(R.id.text);
         textAbajo = (TextView) findViewById(R.id.textabajo);
+        borrar = (Button) findViewById(R.id.buttonBorrar);
         //Instanciar la base de datos
         mDatabase = FirebaseFirestore.getInstance();
         //Autenticar en la BD
@@ -250,8 +254,8 @@ public class MainActivity extends AppCompatActivity {
                                         if (nTel != null && hashkey!=null) {
                                             //Creamos el nuevo codigo OTP.
                                             rCode = crearCodigo();
+                                            textAbajo.setTextColor(Color.parseColor("#D51818"));
                                             textAbajo.setText("El código OTP enviado es: " + rCode);
-
                                             msg = crearMensaje(hashkey);
                                             sendSMS(nTel, msg);
                                             Log.d(TAG, "Se crea el SMS y se envía" );
@@ -390,5 +394,29 @@ public class MainActivity extends AppCompatActivity {
 
         SmsManager sms = SmsManager.getDefault();
         sms.sendTextMessage(numeroTel, null, mensaje, sentPI, deliveredPI);
+    }
+
+    public void onBorrar(View view) {
+        //Borramos los datos que se han enviado
+        RequestQueue requestTokenQueue = Volley.newRequestQueue(MainActivity.this);
+        JSONObject tokenData = new JSONObject();
+        String url ="https://smsretrieverservera-default-rtdb.europe-west1.firebasedatabase.app/numeros.json?auth="+auth;
+        //tokenData.put("otp", null);
+        //tokenData.put("tel", null);
+        // Borramos la info en la URL.
+        StringRequest deleteRequest = new StringRequest(Request.Method.DELETE, url, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                textAbajo.setTextColor(Color.parseColor("#009688"));
+                textView.setText("Borrando datos obsoletos");
+                textAbajo.setText("Se han borrado los datos sastifactoriamene");
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                error.printStackTrace();
+            }
+        });
+        requestTokenQueue.add(deleteRequest);
     }
 }

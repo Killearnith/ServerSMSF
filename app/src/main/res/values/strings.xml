@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">ServerSMSF</string>
     <string name="pantalla_inicial_del_servidor_smsretriever">Pantalla de Debug del Servidor SMSRetrieverF</string>
+    <string name="borrar">Borrar datos</string>
 </resources>
