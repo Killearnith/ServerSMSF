@@ -1,4 +1,4 @@
-package com.server.serversmsf;
+package com.server.serversmsf.Actividades;
 
 import static android.app.PendingIntent.FLAG_IMMUTABLE;
 
@@ -35,6 +35,7 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
 import com.server.serversmsf.modelo.Clave;
+import com.server.serversmsf.modelo.GuardarEnDB;
 import com.server.serversmsf.modelo.ListCode;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -53,7 +54,8 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.SetOptions;
+import com.server.serversmsf.R;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.util.Random;
@@ -69,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
     private String auth;
     private Clave clave;
     private Button borrar;
+    private GuardarEnDB gdb;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,6 +93,10 @@ public class MainActivity extends AppCompatActivity {
 
         app = FirebaseApp.initializeApp(this);
         auten = FirebaseAuth.getInstance();
+
+        //Instanciamos el modelo
+        clave = new Clave();
+        gdb = new GuardarEnDB();
 
         //Pedir permisos de la aplicación
         int permissionCheck = ContextCompat.checkSelfPermission(
@@ -123,7 +130,6 @@ public class MainActivity extends AppCompatActivity {
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
-                //Toast.makeText(getApplicationContext(), "Response: "+response, Toast.LENGTH_LONG).show();
 
             }
         }, new Response.ErrorListener() {
@@ -157,70 +163,44 @@ public class MainActivity extends AppCompatActivity {
                                                 nTel = response.getString("tel");
                                                 hashkey = response.getString("hash");
                                                 textView.setText("Recibida petición de: " + nTel);
+                                                clave.setNumtel(nTel);  //Añadimos el teléfono al Modelo
                                             } else if ((response.length() == 2) && (response.has("otp"))) {
                                                 telVerif = response.getString("tel");
                                                 codeTel = response.getInt("otp");
                                                 Toast.makeText(getApplicationContext(), "Se verifica el OTP", Toast.LENGTH_SHORT).show();
                                                 textView.setText("Recibida petición de verificación de: " + telVerif);
                                                 textAbajo.setText("El código OTP recibido es: " + codeTel);
+                                                clave.setNumtel(String.valueOf(codeTel));  //Añadimos el OTP code al Modelo
                                                 if (telVerif != null && codeTel != 0 && (telVerif.equals(telAux)) && (codeTel==rCode)) {
-                                                    DocumentReference docRef = mDatabase.collection("code").document("verifCodes");
-                                                    docRef.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                                                    String token = generarToken(12); //Generamos el token
+                                                    //Vaciamos los valores internos para siguientes llamadas
+
+                                                    RequestQueue requestTokenQueue = Volley.newRequestQueue(MainActivity.this);
+                                                    JSONObject tokenData = new JSONObject();
+                                                    String url ="https://smsretrieverservera-default-rtdb.europe-west1.firebasedatabase.app/numeros.json?auth="+auth;
+                                                    try {
+                                                        tokenData.put("token", token);
+                                                        textAbajo.setTextColor(Color.parseColor("#03A9F4"));
+                                                        textAbajo.setText("El token de la conexión con el cliente es " +token);
+                                                    } catch (JSONException e) {
+                                                        e.printStackTrace();
+                                                    }
+                                                    // Borramos la info en la URL.
+                                                    JsonObjectRequest jsonDelObjectRequest = new JsonObjectRequest(Request.Method.PUT, url, tokenData, new Response.Listener<JSONObject>() {
                                                         @Override
-                                                        public void onSuccess(DocumentSnapshot documentSnapshot) {
-                                                            ListCode lCode = documentSnapshot.toObject(ListCode.class);
-                                                            if (lCode != null) {
-                                                                Log.d(TAG, "Dentro del object listCode, creando la fila");
-                                                                clave = new Clave();
-                                                                clave.setCode(codeTel);
-                                                                clave.setNumtel(telVerif);
-                                                                //Vaciamos el contenido
-                                                                telVerif = null;
-                                                                rCode=0;
-                                                                clave.setExpiracion(Timestamp.now());
-                                                                mDatabase.collection("code").document("verifCodes")
-                                                                        .update("lCode", FieldValue.arrayUnion(clave))
-                                                                        .addOnSuccessListener(new OnSuccessListener<Void>() {
-                                                                            @Override
-                                                                            public void onSuccess(Void aVoid) {
-                                                                                Log.d(TAG, "CODIGO VERIFICADO!");
-                                                                                RequestQueue requestTokenQueue = Volley.newRequestQueue(MainActivity.this);
-                                                                                JSONObject tokenData = new JSONObject();
-                                                                                String url ="https://smsretrieverservera-default-rtdb.europe-west1.firebasedatabase.app/numeros.json?auth="+auth;
-                                                                                try {
-                                                                                    String token = generarToken(12);
-                                                                                    tokenData.put("token", token);
-                                                                                    textAbajo.setTextColor(Color.parseColor("#03A9F4"));
-                                                                                    textAbajo.setText("El token de la conexión con el cliente es " +token);
-                                                                                    //tokenData.put("otp", null);
-                                                                                    //tokenData.put("tel", null);
-                                                                                } catch (JSONException e) {
-                                                                                    e.printStackTrace();
-                                                                                }
-                                                                                // Borramos la info en la URL.
-                                                                                JsonObjectRequest jsonDelObjectRequest = new JsonObjectRequest(Request.Method.PUT, url, tokenData, new Response.Listener<JSONObject>() {
-                                                                                    @Override
-                                                                                    public void onResponse(JSONObject response) {
-                                                                                        Log.d(TAG, "¡Canal de comunicación solo con token!");
-                                                                                    }
-                                                                                }, new Response.ErrorListener() {
-                                                                                    @Override
-                                                                                    public void onErrorResponse(VolleyError error) {
-                                                                                        error.printStackTrace();
-                                                                                    }
-                                                                                });
-                                                                                requestTokenQueue.add(jsonDelObjectRequest);
-                                                                            }
-                                                                        })
-                                                                        .addOnFailureListener(new OnFailureListener() {
-                                                                            @Override
-                                                                            public void onFailure(@NonNull Exception e) {
-                                                                                Log.w(TAG, "Error con el documento", e);
-                                                                            }
-                                                                        });
-                                                            }
+                                                        public void onResponse(JSONObject response) {
+                                                            Log.d(TAG, "¡Canal de comunicación solo con token!");
+                                                        }
+                                                    }, new Response.ErrorListener() {
+                                                        @Override
+                                                        public void onErrorResponse(VolleyError error) {
+                                                            error.printStackTrace();
                                                         }
                                                     });
+                                                    requestTokenQueue.add(jsonDelObjectRequest);
+                                                    gdb.guardarDatos(clave, "verifCodes");  //Guardamos el dato al haberse verificado en la BD
+                                                    telVerif = null;
+                                                    rCode=0;
                                                 }
 
                                             } else if (response.length() == 0){
@@ -230,8 +210,6 @@ public class MainActivity extends AppCompatActivity {
                                                 RequestQueue requestTokenQueue = Volley.newRequestQueue(MainActivity.this);
                                                 JSONObject tokenData = new JSONObject();
                                                 String url ="https://smsretrieverservera-default-rtdb.europe-west1.firebasedatabase.app/numeros.json?auth="+auth;
-                                                //tokenData.put("otp", null);
-                                                //tokenData.put("tel", null);
                                                 // Borramos la info en la URL.
                                                 StringRequest deleteRequest = new StringRequest(Request.Method.DELETE, url, new Response.Listener<String>() {
                                                     @Override
@@ -258,46 +236,17 @@ public class MainActivity extends AppCompatActivity {
                                             textAbajo.setText("El código OTP enviado es: " + rCode);
                                             msg = crearMensaje(hashkey);
                                             sendSMS(nTel, msg);
+                                            clave.setCode(rCode);   //Metemos la clave OTP en el Modelo
                                             Log.d(TAG, "Se crea el SMS y se envía" );
                                             telAux = nTel;
                                             Log.d(TAG, "Se borra hashkey" );
                                             hashkey=null;
                                             //Si no hay num tel no escribe en la BD
-                                                Toast.makeText(getApplicationContext(), "El num de tel es: " + nTel, Toast.LENGTH_LONG).show();
-                                                //Guardamos el codigo en la BD
-                                                DocumentReference docRef = mDatabase.collection("code").document("listcode");
-                                                docRef.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
-                                                    @Override
-                                                    public void onSuccess(DocumentSnapshot documentSnapshot) {
-                                                        ListCode lCode = documentSnapshot.toObject(ListCode.class);
-                                                        if (lCode != null) {
-                                                            Log.d(TAG, "Dentro del object listCode, creando la fila");
-                                                            clave = new Clave();
-                                                            clave.setCode(rCode);
-                                                            clave.setNumtel(nTel);
-                                                            //Vaciamos el contenido
-                                                            Log.d(TAG, "Se borra nTel despues de escribirse en la BD" );
-                                                            nTel = null;
-                                                            clave.setExpiracion(Timestamp.now());
-                                                            mDatabase.collection("code").document("listcode")
-                                                                    .update("lCode", FieldValue.arrayUnion(clave))
-                                                                    .addOnSuccessListener(new OnSuccessListener<Void>() {
-                                                                        @Override
-                                                                        public void onSuccess(Void aVoid) {
-                                                                            Log.d(TAG, "DocumentSnapshot successfully written!");
-                                                                        }
-                                                                    })
-                                                                    .addOnFailureListener(new OnFailureListener() {
-                                                                        @Override
-                                                                        public void onFailure(@NonNull Exception e) {
-                                                                            Log.w(TAG, "Error writing document", e);
-                                                                        }
-                                                                    });
-                                                        }
-                                                    }
-                                                });
-                                                  //Fin IF
-                                        }
+                                            Toast.makeText(getApplicationContext(), "El num de tel es: " + nTel, Toast.LENGTH_SHORT).show();
+                                            //Guardamos el codigo en la BD
+                                            gdb.guardarDatos(clave, "listcode");            //Llamamos al modelo para guardar los datos
+                                            nTel=null;  //Vaciamos el valor.
+                                        }//Fin IF
                                     }
                                 }, new Response.ErrorListener() {
                                     @Override
@@ -307,7 +256,6 @@ public class MainActivity extends AppCompatActivity {
                                 });
                         queue.add(jsonObjectRequest);
                     }
-
                     @Override
                     public void onCancelled(@NonNull DatabaseError error) {
                         Log.w("SE BORRAN DATOS", "Se están borrando datos");
@@ -366,12 +314,10 @@ public class MainActivity extends AppCompatActivity {
                         Toast.makeText(getBaseContext(), "Sin servicio error", Toast.LENGTH_SHORT).show();
                         break;
                     case SmsManager.RESULT_ERROR_NULL_PDU:
-                        Toast.makeText(getBaseContext(), "Null PDU",
-                                Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getBaseContext(), "Null PDU", Toast.LENGTH_SHORT).show();
                         break;
                     case SmsManager.RESULT_ERROR_RADIO_OFF:
-                        Toast.makeText(getBaseContext(), "Radio apagada",
-                                Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getBaseContext(), "Radio apagada", Toast.LENGTH_SHORT).show();
                         break;
                 }
             }
@@ -401,8 +347,6 @@ public class MainActivity extends AppCompatActivity {
         RequestQueue requestTokenQueue = Volley.newRequestQueue(MainActivity.this);
         JSONObject tokenData = new JSONObject();
         String url ="https://smsretrieverservera-default-rtdb.europe-west1.firebasedatabase.app/numeros.json?auth="+auth;
-        //tokenData.put("otp", null);
-        //tokenData.put("tel", null);
         // Borramos la info en la URL.
         StringRequest deleteRequest = new StringRequest(Request.Method.DELETE, url, new Response.Listener<String>() {
             @Override
@@ -410,6 +354,11 @@ public class MainActivity extends AppCompatActivity {
                 textAbajo.setTextColor(Color.parseColor("#009688"));
                 textView.setText("Borrando datos obsoletos");
                 textAbajo.setText("Se han borrado los datos sastifactoriamene");
+                nTel=null;
+                telVerif=null;
+                telAux=null;
+                codeTel=0;
+                rCode=0;
             }
         }, new Response.ErrorListener() {
             @Override
