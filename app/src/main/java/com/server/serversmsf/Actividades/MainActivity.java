@@ -34,7 +34,7 @@ import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
-import com.server.serversmsf.modelo.Clave;
+import com.server.serversmsf.modelo.OTPs;
 import com.server.serversmsf.modelo.GuardarEnDB;
 import com.server.serversmsf.modelo.ListCode;
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -58,6 +58,8 @@ import com.server.serversmsf.R;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.Date;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
@@ -69,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseApp app;
     private FirebaseAuth auten;
     private String auth;
-    private Clave clave;
+    private OTPs clave;
     private Button borrar;
     private GuardarEnDB gdb;
 
@@ -95,7 +97,7 @@ public class MainActivity extends AppCompatActivity {
         auten = FirebaseAuth.getInstance();
 
         //Instanciamos el modelo
-        clave = new Clave();
+        clave = new OTPs();
         gdb = new GuardarEnDB();
 
         //Pedir permisos de la aplicación
@@ -205,8 +207,9 @@ public class MainActivity extends AppCompatActivity {
 
                                             } else if (response.length() == 0){
                                                 textView.setText("Canal de comunicación borrado");
-                                            }else if (response.length() == 1 && !(response.has("token"))) {
+                                            }else if (response.length() == 1 && !(response.has("token"))) {     //Si solo se manda el num de telefono
                                                 //Borramos los datos que se han enviado
+                                                String respAnt=response.getString("tel"); //Telefono anterior
                                                 RequestQueue requestTokenQueue = Volley.newRequestQueue(MainActivity.this);
                                                 JSONObject tokenData = new JSONObject();
                                                 String url ="https://smsretrieverservera-default-rtdb.europe-west1.firebasedatabase.app/numeros.json?auth="+auth;
@@ -215,7 +218,7 @@ public class MainActivity extends AppCompatActivity {
                                                     @Override
                                                     public void onResponse(String response) {
                                                         textAbajo.setTextColor(Color.parseColor("#03A9F4"));
-                                                        textView.setText("ERROR DATOS ERRONEOS POR API REST, SOLO TLF");
+                                                        textView.setText("ERROR se ha recibido solo el telefono: "+respAnt);
                                                         textAbajo.setText("Borrando los datos del canal de comunicación");
                                                     }
                                                 }, new Response.ErrorListener() {
@@ -236,6 +239,10 @@ public class MainActivity extends AppCompatActivity {
                                             textAbajo.setText("El código OTP enviado es: " + rCode);
                                             msg = crearMensaje(hashkey);
                                             sendSMS(nTel, msg);
+                                            //CADUCIDAD
+                                            Date tiempoAct= Timestamp.now().toDate();
+                                            long miliDate= tiempoAct.getTime();
+                                            clave.setCaducidad(new Date(miliDate+(5 * 60 * 1000)).toString());
                                             clave.setCode(rCode);   //Metemos la clave OTP en el Modelo
                                             Log.d(TAG, "Se crea el SMS y se envía" );
                                             telAux = nTel;
@@ -273,13 +280,13 @@ public class MainActivity extends AppCompatActivity {
         return num;
     }
 
+    //Método para generar un token aleatorio de una longitud dad por parametro para la conexión
     private String generarToken(int lon){
         String posibleChar = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";          //Posibles chars
-        Random r = new Random();
         String token = null;
         StringBuilder tokenB = new StringBuilder(lon);              //Generamos una cadena de tam max = lon
         for (int i = 0; i < lon; i++) {
-            tokenB.append(posibleChar.charAt(r.nextInt(posibleChar.length())));   //Añadimos un nuevo char a la cadena
+            tokenB.append(posibleChar.charAt(new Random().nextInt(posibleChar.length())));   //Añadimos un nuevo char a la cadena
         }
         token =tokenB.toString();
         return token;
