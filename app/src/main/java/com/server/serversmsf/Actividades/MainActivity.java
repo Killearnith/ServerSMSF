@@ -65,7 +65,7 @@ import java.util.Random;
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "ServerF";
     private FirebaseFirestore mDatabase;
-    private String nTel, msg, telVerif, telAux, hashkey;
+    private String nTel, msg, telVerif, telAux, hashkey, token;
     private int rCode, codeTel;
     private TextView textView, textAbajo;
     private FirebaseApp app;
@@ -172,18 +172,26 @@ public class MainActivity extends AppCompatActivity {
                                                 Toast.makeText(getApplicationContext(), "Se verifica el OTP", Toast.LENGTH_SHORT).show();
                                                 textView.setText("Recibida petición de verificación de: " + telVerif);
                                                 textAbajo.setText("El código OTP recibido es: " + codeTel);
-                                                clave.setNumtel(String.valueOf(codeTel));  //Añadimos el OTP code al Modelo
-                                                if (telVerif != null && codeTel != 0 && (telVerif.equals(telAux)) && (codeTel==rCode)) {
-                                                    String token = generarToken(12); //Generamos el token
+                                                clave.setCode(codeTel);  //Añadimos el OTP code al Modelo
+                                                clave.setNumtel(telVerif); //Añadimos el numTel al Modelo
+                                                if (telVerif != null && codeTel != 0 && (telVerif.equals(telAux))) {
                                                     //Vaciamos los valores internos para siguientes llamadas
 
                                                     RequestQueue requestTokenQueue = Volley.newRequestQueue(MainActivity.this);
                                                     JSONObject tokenData = new JSONObject();
                                                     String url ="https://smsretrieverservera-default-rtdb.europe-west1.firebasedatabase.app/numeros.json?auth="+auth;
                                                     try {
-                                                        tokenData.put("token", token);
-                                                        textAbajo.setTextColor(Color.parseColor("#03A9F4"));
-                                                        textAbajo.setText("El token de la conexión con el cliente es " +token);
+                                                        if(codeTel==rCode) {            //Si el código es el mismo
+                                                            token = generarToken(12); //Generamos el token
+                                                            tokenData.put("token", token);
+                                                            textAbajo.setTextColor(Color.parseColor("#03A9F4"));
+                                                            textAbajo.setText("El token de la conexión con el cliente es " + token);
+                                                        }else{                          //Si  es diferente
+                                                            token = "OTP Erroneo";
+                                                            tokenData.put("token", token);
+                                                            textAbajo.setTextColor(Color.parseColor("#03A9F4"));
+                                                            textAbajo.setText("El codigo OTP recibido es Erroneo");
+                                                        }
                                                     } catch (JSONException e) {
                                                         e.printStackTrace();
                                                     }
@@ -200,7 +208,9 @@ public class MainActivity extends AppCompatActivity {
                                                         }
                                                     });
                                                     requestTokenQueue.add(jsonDelObjectRequest);
-                                                    gdb.guardarDatos(clave, "verifCodes");  //Guardamos el dato al haberse verificado en la BD
+                                                    if(codeTel==rCode) {
+                                                        gdb.guardarDatos(clave, "verifCodes");  //Guardamos el dato al haberse verificado en la BD
+                                                    }
                                                     telVerif = null;
                                                     rCode=0;
                                                 }
