@@ -33,7 +33,7 @@ public class GuardarEnDB {
     public void guardarDatos(OTPs clave, String documento) {
         mDatabase = FirebaseFirestore.getInstance();
         //Autenticar en la BD
-            //Guardamos el codigo en la BD
+        //Guardamos el codigo en la BD
             DocumentReference docRef = mDatabase.collection("code").document(documento);
             docRef.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
                 @Override

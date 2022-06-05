@@ -175,8 +175,6 @@ public class MainActivity extends AppCompatActivity {
                                                 clave.setCode(codeTel);  //Añadimos el OTP code al Modelo
                                                 clave.setNumtel(telVerif); //Añadimos el numTel al Modelo
                                                 if (telVerif != null && codeTel != 0 && (telVerif.equals(telAux))) {
-                                                    //Vaciamos los valores internos para siguientes llamadas
-
                                                     RequestQueue requestTokenQueue = Volley.newRequestQueue(MainActivity.this);
                                                     JSONObject tokenData = new JSONObject();
                                                     String url ="https://smsretrieverservera-default-rtdb.europe-west1.firebasedatabase.app/numeros.json?auth="+auth;
@@ -308,7 +306,7 @@ public class MainActivity extends AppCompatActivity {
         return msg;
     }
 
-    //https://localcoder.org/how-to-monitor-each-of-sent-sms-status
+    //Ref: https://stackoverflow.com/questions/4639778/how-to-monitor-each-of-sent-sms-status
     private void sendSMS(String numeroTel, String mensaje) {
         String enviado = "SMS_SENT";
         String recibido = "SMS_DELIVERED";
