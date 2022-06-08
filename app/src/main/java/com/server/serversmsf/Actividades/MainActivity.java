@@ -4,6 +4,7 @@ import static android.app.PendingIntent.FLAG_IMMUTABLE;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -13,9 +14,11 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.telephony.SmsManager;
+import android.text.InputType;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -65,7 +68,7 @@ import java.util.Random;
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "ServerF";
     private FirebaseFirestore mDatabase;
-    private String nTel, msg, telVerif, telAux, hashkey, token;
+    private String nTel, msg, telVerif, telAux, hashkey, token, urlBD;
     private int rCode, codeTel;
     private TextView textView, textAbajo;
     private FirebaseApp app;
@@ -150,7 +153,12 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
                         RequestQueue queue = Volley.newRequestQueue(MainActivity.this);
-                        String url2 = "https://smsretrieverservera-default-rtdb.europe-west1.firebasedatabase.app/numeros.json?auth="+auth;
+                        String url2;
+                        if(urlBD == null) {
+                            url2 = "https://smsretrieverservera-default-rtdb.europe-west1.firebasedatabase.app/numeros.json?auth=" + auth;
+                        }else {
+                            url2 = urlBD;
+                        }
                         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest
                                 (Request.Method.GET, url2, null, new Response.Listener<JSONObject>() {
                                     @Override
@@ -220,7 +228,12 @@ public class MainActivity extends AppCompatActivity {
                                                 String respAnt=response.getString("tel"); //Telefono anterior
                                                 RequestQueue requestTokenQueue = Volley.newRequestQueue(MainActivity.this);
                                                 JSONObject tokenData = new JSONObject();
-                                                String url ="https://smsretrieverservera-default-rtdb.europe-west1.firebasedatabase.app/numeros.json?auth="+auth;
+                                                String url;
+                                                if(urlBD == null) {
+                                                    url = "https://smsretrieverservera-default-rtdb.europe-west1.firebasedatabase.app/numeros.json?auth=" + auth;
+                                                }else {
+                                                    url = urlBD;
+                                                }
                                                 // Borramos la info en la URL.
                                                 StringRequest deleteRequest = new StringRequest(Request.Method.DELETE, url, new Response.Listener<String>() {
                                                     @Override
@@ -232,7 +245,7 @@ public class MainActivity extends AppCompatActivity {
                                                 }, new Response.ErrorListener() {
                                                     @Override
                                                     public void onErrorResponse(VolleyError error) {
-                                                        error.printStackTrace();
+                                                        Toast.makeText(getApplicationContext(), "Error URL no existente o sin permisos", Toast.LENGTH_SHORT).show();
                                                     }
                                                 });
                                                 requestTokenQueue.add(deleteRequest);
@@ -266,7 +279,12 @@ public class MainActivity extends AppCompatActivity {
                                 }, new Response.ErrorListener() {
                                     @Override
                                     public void onErrorResponse(VolleyError error) {
-                                        Toast.makeText(getApplicationContext(), "No hay mensajes", Toast.LENGTH_LONG).show();
+                                        if (urlBD == null) {
+                                            Toast.makeText(getApplicationContext(), "No hay mensajes", Toast.LENGTH_LONG).show();
+                                        }else{
+                                            Toast.makeText(getApplicationContext(), "Error URL no existente o sin permisos", Toast.LENGTH_SHORT).show();
+                                        }
+
                                     }
                                 });
                         queue.add(jsonObjectRequest);
@@ -361,7 +379,12 @@ public class MainActivity extends AppCompatActivity {
         //Borramos los datos que se han enviado
         RequestQueue requestTokenQueue = Volley.newRequestQueue(MainActivity.this);
         JSONObject tokenData = new JSONObject();
-        String url ="https://smsretrieverservera-default-rtdb.europe-west1.firebasedatabase.app/numeros.json?auth="+auth;
+        String url;
+        if(urlBD == null) {
+            url = "https://smsretrieverservera-default-rtdb.europe-west1.firebasedatabase.app/numeros.json?auth=" + auth;
+        }else {
+            url = urlBD;
+        }
         // Borramos la info en la URL.
         StringRequest deleteRequest = new StringRequest(Request.Method.DELETE, url, new Response.Listener<String>() {
             @Override
@@ -378,9 +401,21 @@ public class MainActivity extends AppCompatActivity {
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                error.printStackTrace();
+                Toast.makeText(getApplicationContext(), "Error URL no existente o sin permisos", Toast.LENGTH_SHORT).show();
             }
         });
         requestTokenQueue.add(deleteRequest);
+    }
+
+    //Metodo para obtener un nuevo enlace para la BD por API REST
+    public void onNewDB(View view) {
+        AlertDialog.Builder cst = new AlertDialog.Builder(this);
+        cst.setTitle("Introduce la nueva URL de la Base de Datos (API REST)");
+        final EditText in = new EditText(this);
+        in.setInputType(InputType.TYPE_CLASS_TEXT);
+        cst.setView(in);
+        cst.setPositiveButton("Continuar", (dg, w) -> urlBD = in.getText().toString());
+        cst.setNegativeButton("Cancelar", (dg, w) -> dg.cancel());
+        cst.show();
     }
 }
