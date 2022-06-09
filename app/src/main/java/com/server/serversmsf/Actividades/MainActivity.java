@@ -410,6 +410,7 @@ public class MainActivity extends AppCompatActivity {
         requestTokenQueue.add(deleteRequest);
     }
 
+    //Ref: https://stackoverflow.com/questions/10903754/input-text-dialog-android
     //Metodo para obtener un nuevo enlace para la BD por API REST
     public void onNewDB(View view) {
         AlertDialog.Builder cst = new AlertDialog.Builder(this);
